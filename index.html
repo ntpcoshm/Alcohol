@@ -129,7 +129,7 @@
       });
     };
 
-    // 呼叫總機：檢查身分 (參數已對齊總表的 action: 'checkUser')
+    // 呼叫總機：檢查身分 (升級版：會顯示真實錯誤訊息)
     function checkUserExist() {
       fetch(APPS_SCRIPT_URL, {
         method: 'POST',
@@ -139,10 +139,16 @@
       .then(data => {
         document.getElementById('loading').classList.add('hidden');
         if (data.status === 'success' && data.user) {
+          // 成功找到人，進入主畫面
           currentDept = data.user.dept;
           currentRealName = data.user.name;
           showMainUI();
+        } else if (data.status === 'error') {
+          // 🚨 抓到兇手！如果 GAS 報錯，直接把錯誤原因彈出來！
+          Swal.fire({ icon: 'error', title: '總機發生錯誤', text: data.message, confirmButtonText: '我知道了' });
+          document.getElementById('registerUI').classList.remove('hidden');
         } else {
+          // 真的查無此人
           document.getElementById('registerUI').classList.remove('hidden');
         }
       })
