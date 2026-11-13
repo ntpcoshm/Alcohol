@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <!-- 加入 LINE LIFF -->
+  <script charset="utf-8" src="https://static.line-scdn.net/liff/edge/2/sdk.js"></script>
+  <!-- 加入 SweetAlert2 彈出視窗套件 -->
+  <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+  
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>每日酒測登記</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; padding: 20px; background: #f4f4f9; text-align: center; }
+    .container { max-width: 500px; margin: auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    h2 { color: #2c3e50; margin-bottom: 5px; }
+    #driverName { font-size: 22px; font-weight: bold; color: #2980b9; margin-bottom: 20px; line-height: 1.5; }
+    
+    #buttonGroup { margin-top: 40px; }
+    
+    .btn-pass { display: block; width: 100%; padding: 25px 20px; background: #27ae60; color: white; border: none; border-radius: 8px; font-size: 24px; font-weight: bold; cursor: pointer; margin-bottom: 35px; transition: 0.3s; }
+    .btn-fail { display: block; width: 100%; padding: 18px; background: #e74c3c; color: white; border: none; border-radius: 8px; font-size: 20px; font-weight: bold; cursor: pointer; margin-bottom: 15px; transition: 0.3s;}
+    .btn-cancel { display: block; width: 100%; padding: 15px; background: #7f8c8d; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    
+    .btn-pass:disabled, .btn-fail:disabled, .btn-submit:disabled { background: #95a5a6 !important; cursor: not-allowed; }
+    
+    .input-box { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #e74c3c; border-radius: 8px; font-size: 18px; box-sizing: border-box; text-align: center; }
+    
+    .reg-input { width: 100%; padding: 12px; margin-bottom: 20px; border: 2px solid #3498db; border-radius: 8px; font-size: 18px; box-sizing: border-box; text-align: center; background-color: #fff; }
+    .btn-submit { display: block; width: 100%; padding: 15px; background: #3498db; color: white; border: none; border-radius: 8px; font-size: 18px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+
+    #loading { color: #666; margin-bottom: 20px; }
+    .hidden { display: none !important; }
+
+    /* 放大 SweetAlert2 視窗內的字體 */
+    .swal2-title { font-size: 28px !important; }
+    .swal2-html-container { font-size: 20px !important; }
+    .swal2-confirm { font-size: 20px !important; padding: 12px 24px !important; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>🚓 每日酒測登記</h2>
+    <div id="loading">🔄 讀取系統資料中...</div>
+    
+    <!-- 註冊綁定區塊 -->
+    <div id="registerUI" class="hidden">
+      <h3 style="color: #3498db;">👋 歡迎！請先綁定身分</h3>
+      <p style="color: #7f8c8d; font-size: 14px; margin-bottom: 15px;">初次使用系統，請選擇區隊並輸入真實姓名</p>
+      
+     <!-- 👇 新增：區隊下拉式選單 (已補齊新北市28區) -->
+      <select id="regDeptInput" class="reg-input">
+        <option value="">請選擇所屬區隊...</option>
+        <option value="板橋區">板橋區</option>
+        <option value="三重區">三重區</option>
+        <option value="中和區">中和區</option>
+        <option value="永和區">永和區</option>
+        <option value="新莊區">新莊區</option>
+        <option value="新店區">新店區</option>
+        <option value="樹林區">樹林區</option>
+        <option value="鶯歌區">鶯歌區</option>
+        <option value="三峽區">三峽區</option>
+        <option value="淡水區">淡水區</option>
+        <option value="汐止區">汐止區</option>
+        <option value="瑞芳區">瑞芳區</option>
+        <option value="土城區">土城區</option>
+        <option value="蘆洲區">蘆洲區</option>
+        <option value="五股區">五股區</option>
+        <option value="泰山區">泰山區</option>
+        <option value="林口區">林口區</option>
+        <option value="深坑區">深坑區</option>
+        <option value="石碇區">石碇區</option>
+        <option value="坪林區">坪林區</option>
+        <option value="三芝區">三芝區</option>
+        <option value="石門區">石門區</option>
+        <option value="八里區">八里區</option>
+        <option value="平溪區">平溪區</option>
+        <option value="雙溪區">雙溪區</option>
+        <option value="貢寮區">貢寮區</option>
+        <option value="金山區">金山區</option>
+        <option value="萬里區">萬里區</option>
+      </select>
+
+      <input type="text" id="regNameInput" class="reg-input" placeholder="請輸入全名">
+      <button class="btn-submit" id="btnRegister" onclick="submitRegister()">✅ 確認綁定</button>
+    </div>
+
+    <!-- 測量主要畫面 -->
+    <div id="mainUI" class="hidden">
+      <!-- 👇 顯示區塊升級：會同時顯示區隊與姓名 -->
+      <div id="driverName">姓名載入中...</div>
+      
+      <div id="buttonGroup">
+        <button id="btnPass" class="btn-pass" onclick="submitPass()">🟢 酒測值為 0 mg/L</button>
+        <button id="btnFailMain" class="btn-fail" onclick="showAbnormalBox()">🔴 含有酒精反應</button>
+      </div>
+
+      <div id="abnormalBox" class="hidden">
+        <label style="display:block; margin-bottom:10px; font-weight:bold; color:#e74c3c;">請輸入實際酒測數值 (mg/L)：</label>
+        <input type="number" id="abnormalValue" class="input-box" step="0.01" placeholder="例如：0.15">
+        <button id="btnSubmitAbnormal" class="btn-fail" onclick="submitAbnormal()">⚠️ 確認送出異常紀錄</button>
+        <button class="btn-cancel" onclick="cancelAbnormal()">🔙 返回上一步</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // ⚠️ 請換成您剛剛在「局本部總表」發布的最新 GAS 網址
+    const APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdorWD7vrFtAQSClTwIifv9_RkBkPlSdLG3Plv9PhGKFTw80nt_RHHkrjqJE2w0sCS/exec"; 
+    // ⚠️ 您的 LINE LIFF ID
+    const LIFF_ID = "2012500827-Sb04U2oi"; 
+    
+    let currentUserId = "";
+    let currentLineName = "";
+    let currentDept = "";     // 新增：紀錄當前區隊
+    let currentRealName = "";
+
+    window.onload = function() {
+      liff.init({ liffId: LIFF_ID, withLoginOnExternalBrowser: true })
+      .then(() => {
+        if (!liff.isLoggedIn()) {
+          liff.login();
+        } else {
+          liff.getProfile().then(profile => {
+            currentUserId = profile.userId;
+            currentLineName = profile.displayName;
+            checkUserExist(); 
+          });
+        }
+      });
+    };
+
+    // 呼叫總機：檢查身分 (參數已對齊總表的 action: 'checkUser')
+    function checkUserExist() {
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'checkUser', uid: currentUserId })
+      })
+      .then(res => res.json())
+      .then(data => {
+        document.getElementById('loading').classList.add('hidden');
+        if (data.status === 'success' && data.user) {
+          currentDept = data.user.dept;
+          currentRealName = data.user.name;
+          showMainUI();
+        } else {
+          document.getElementById('registerUI').classList.remove('hidden');
+        }
+      })
+      .catch(err => {
+        Swal.fire({ icon: 'error', title: '連線異常', text: '無法連接資料庫，請重新整理頁面', confirmButtonText: '我知道了' });
+      });
+    }
+
+    // 呼叫總機：註冊綁定 (參數已對齊總表的 action: 'registerUser')
+    function submitRegister() {
+      const deptInput = document.getElementById('regDeptInput').value;
+      const nameInput = document.getElementById('regNameInput').value.trim();
+      
+      if (!deptInput || !nameInput) {
+        Swal.fire({ icon: 'warning', title: '資料不完整', text: '請選擇所屬區隊並填寫真實姓名！', confirmButtonText: '確定' });
+        return;
+      }
+      
+      const btn = document.getElementById('btnRegister');
+      btn.disabled = true;
+      btn.innerText = "⏳ 綁定中，請稍候...";
+      
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify({ action: 'registerUser', uid: currentUserId, dept: deptInput, name: nameInput })
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.status === 'success') {
+          Swal.fire({
+            icon: 'success',
+            title: '✅ 綁定成功',
+            text: `歡迎使用，${deptInput} ${nameInput}！`,
+            confirmButtonColor: '#3498db',
+            confirmButtonText: '開始酒測'
+          }).then(() => {
+            currentDept = deptInput;
+            currentRealName = nameInput;
+            document.getElementById('registerUI').classList.add('hidden');
+            showMainUI();
+          });
+        } else {
+          throw new Error(data.message);
+        }
+      })
+      .catch(err => {
+        Swal.fire({ icon: 'error', title: '綁定失敗', text: err.message || '請檢查網路後再試一次', confirmButtonText: '確定' });
+        btn.disabled = false;
+        btn.innerText = "✅ 確認綁定";
+      });
+    }
+
+    function showMainUI() {
+      document.getElementById('driverName').innerText = `哈囉，${currentDept}\n${currentRealName}`;
+      document.getElementById('mainUI').classList.remove('hidden');
+    }
+
+    function submitPass() {
+      const btn = document.getElementById('btnPass');
+      btn.innerText = '⏳ 資料送出中，請稍後...';
+      // 將字串傳入 resultValue
+      sendDataToGAS('數值為 0.00 mg/L (合格)', '');
+    }
+
+    function showAbnormalBox() {
+      document.getElementById('buttonGroup').classList.add('hidden');
+      document.getElementById('abnormalBox').classList.remove('hidden');
+    }
+
+    function cancelAbnormal() {
+      document.getElementById('buttonGroup').classList.remove('hidden');
+      document.getElementById('abnormalBox').classList.add('hidden');
+      document.getElementById('abnormalValue').value = ''; 
+    }
+
+    function submitAbnormal() {
+      const numValue = document.getElementById('abnormalValue').value;
+      if (!numValue) {
+        Swal.fire({ icon: 'warning', title: '請輸入數值', text: '請確實填寫酒測儀器上的數字！', confirmButtonText: '確定' });
+        return;
+      }
+      
+      const btn = document.getElementById('btnSubmitAbnormal');
+      btn.innerText = '⏳ 資料送出中，請稍後...';
+      sendDataToGAS(`含有酒精反應 (異常)`, `數值：${numValue} mg/L`);
+    }
+
+    // 呼叫總機：送出紀錄 (參數已對齊總表的 action: 'submitRecord')
+    function sendDataToGAS(resultValue, noteValue) {
+      const buttons = document.querySelectorAll('button');
+      buttons.forEach(btn => btn.disabled = true);
+
+      const formData = {
+        action: 'submitRecord',
+        dept: currentDept,
+        name: currentRealName,
+        alcoholValue: resultValue, // 寫入酒測紀錄 D 欄
+        remarks: noteValue         // 寫入酒測紀錄 E 欄
+      };
+
+      fetch(APPS_SCRIPT_URL, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      })
+      .then(res => res.json())
+      .then(data => {
+        if(data.status === 'success'){
+          Swal.fire({
+            icon: 'success',
+            title: '✅ 紀錄已送出！',
+            text: '您的酒測紀錄已安全存檔',
+            confirmButtonColor: '#27ae60', 
+            confirmButtonText: '關閉視窗',
+            allowOutsideClick: false 
+          }).then((result) => {
+            if (result.isConfirmed) {
+              liff.closeWindow(); 
+            }
+          });
+        } else {
+          throw new Error(data.message);
+        }
+      })
+      .catch(error => {
+        Swal.fire({ icon: 'error', title: '❌ 傳送失敗', text: error.message || '請檢查網路連線是否正常', confirmButtonText: '確定' });
+        buttons.forEach(btn => btn.disabled = false);
+        document.getElementById('btnPass').innerText = '🟢 酒測值為 0 mg/L';
+        document.getElementById('btnSubmitAbnormal').innerText = '⚠️ 確認送出異常紀錄';
+      });
+    }
+  </script>
+</body>
+</html>
